@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<style>
+		body{
+			margin:0;
+		}
+		canvas{width : 100%; height : 100%;}
+		#score {
+			position: absolute;
+			color: white;
+			top: 50px;
+		}
+	</style>
+	
+</head>
+<body>
+<script src="js/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<h1 id="score">Score: 0</h5>
+	<script>
+		var scene = new THREE.Scene();
+		var camera = new THREE.PerspectiveCamera(50 , window.innerWidth / window.innerHeight, 0.1, 1000);
+		var renderer = new THREE.WebGLRenderer();
+  scene.control = new THREE.OrbitControls( camera );
+    scene.control.screenSpacePanning = true;
+    scene.control.enableKeys = false;
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(renderer.domElement);
+
+		window.addEventListener('resized', function()
+		{
+			
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			camera.aspect = window.innerWidth / window.innerHeight;
+
+			camera.updateProjectionMatrix();
+		}
+		)
+		camera.position.z = 3;
+		camera.position.x = 0;
+		camera.position.y = -12;
+        camera.rotation.x = Math.PI*0.4;
+		//camera.lookAt(0,0,0);		
+var roadx=5;
+var roady=20 ;
+		var loader = new THREE.TextureLoader();
+		const texforbox = loader.load('ro.jfif');
+		const textureloader = loader.load('ro.jfif');
+
+	    var geometry = new THREE.PlaneGeometry( roadx, roady );
+       
+		var material = new THREE.MeshBasicMaterial( { map: textureloader }  );
+		var background = new THREE.Mesh( geometry, material );
+		
+		scene.add( background );
+
+
+		
+		
+		document.addEventListener("keydown", onDocumentKeyDown, false);
+
+		
+
+var box = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({color: "blue", wireframe: false}));
+var obst = 0;
+box.position.z = 1 ;
+score = 0;
+box.position.y = -4;
+box.position.x = 0;
+var road = 1;
+var move=0;
+var allowed = true;
+var lastObst = false;
+var speed =true;
+var velocity=0;
+box.rotation.y=Math.PI*0.25;
+scene.add(box);
+var soundFile = document.createElement("audio");
+soundFile.preload = "auto";
+
+//Load the sound file (using a source element for expandability)
+var src = document.createElement("source");
+src.src =  "lose.mp3";
+soundFile.appendChild(src);
+
+//Load the audio tag
+//It auto plays as a fallback
+soundFile.load();
+;
+function play() {
+   //Set the current time for the audio file to the beginning
+   soundFile.currentTime = 0.01;
+   soundFile.volume = 1;
+
+   //Due to a bug in Firefox, the audio needs to be played after a delay
+   setTimeout(function(){soundFile.play();},1);
+}
+
+		function onDocumentKeyDown(event) {
+		    var keyCode = event.which;
+		     if (keyCode == 65&&box.position.x!=-0.75 && allowed) {
+		        box.position.x -= 0.25;
+		    } else if (keyCode == 68&&box.position.x!=0.75 && allowed) {
+		        box.position.x += 0.25;
+		    } 
+
+			else if (keyCode == 87) {
+		       // box.position.y += 1;
+				//camera.position.y += 1;
+				if(velocity<1){
+					velocity++;
+				}
+				
+				if(box.position.y%road==0){
+				
+				
+	          var geometry = new THREE.PlaneGeometry( roadx, roady );
+       
+	         	var material = new THREE.MeshBasicMaterial( { map: textureloader }  );
+	           	var background = new THREE.Mesh( geometry, material );
+		background.position.y+=roady*road;
+		road++;
+	           	scene.add( background );
+			}
+		}
+	};
+function lose() {
+	play();
+	speed = false;
+	allowed = false;
+	document.getElementById("score").innerHTML = "You lost.";
+	setTimeout(function(){location.reload();},2500);
+}
+var update = function(){
+
+		
+		   
+		   if(speed==true){
+		   	    box.position.y += velocity;
+				camera.position.y += velocity;
+				if (velocity > 0) {
+					score++;
+					document.getElementById("score").innerHTML = "Score: "+score;
+				}
+				if (lastObst) {
+					if (box.position.y == lastObst.position.y-2) {
+						if ((box.position.x == -0.75 || box.position.x == -0.5) && lastObst.position.x == -1) {
+							lose();
+						} else if ((box.position.x == -0.25 || box.position.x == 0 || box.position.x == 0.25 || box.position.x == 0.5 || box.position.x == -0.5) && lastObst.position.x == 0) {
+							lose();
+						} else if ((box.position.x == 0.75 || box.position.x == 0.5) && lastObst.position.x == 1) {
+							lose();
+						}
+						
+					}
+				}
+		   
+		   }
+		   
+		   if(box.position.y%road==0 && speed){
+				
+				
+	          var geometry = new THREE.PlaneGeometry( roadx, roady );
+       			var draw = true;
+	         	var material = new THREE.MeshBasicMaterial( { map: textureloader }  );
+	           	var background = new THREE.Mesh( geometry, material );
+	           	if (velocity != 0) {
+	           		var next = box.position.y + 40;
+	           		if (lastObst) {
+	           			if (lastObst.position.y - (box.position.y) != 0) {
+	           				draw = false;
+	           			} else {
+	           				draw = true;
+	           			}
+	           		}
+	           		if (draw) {
+		           		var boz = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 3), new THREE.MeshBasicMaterial({color: "red", wireframe: false}));
+		           		lastObst = boz;
+		           		boz.position.x = obst - 1;	           	
+		           		boz.position.y = next;
+		           		obst = Math.floor(Math.random() * 3);
+						scene.add(boz);
+					}
+				}
+
+		background.position.y+=roady*road;
+		road++;
+	           	scene.add( background );
+		}
+		
+		   box.rotation.x -= 0.05;
+   		
+
+		};
+		
+
+		var render = function(){
+
+			renderer.render(scene,camera);
+
+			
+
+		};
+
+		var loop = function(){
+
+			requestAnimationFrame(loop);
+
+			update();
+			render();
+
+		};
+
+		loop();
+	</script>
+
+</body>
+</html>
